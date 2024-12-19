@@ -6,17 +6,7 @@ import jwtDecode from "jwt-decode";
 
 import { Request, Response, CookieOptions } from "express";
 import { TokenSet } from "openid-client";
-import {
-  XeroAccessToken,
-  XeroIdToken,
-  XeroClient,
-  // Contact,
-  // LineItem,
-  // Invoice,
-  // Invoices,
-  // Phone,
-  // Contacts,
-} from "xero-node";
+import { XeroAccessToken, XeroIdToken, XeroClient } from "xero-node";
 
 const session = require("express-session");
 
@@ -130,7 +120,44 @@ app.get("/callback", async (req: Request, res: Response) => {
     );
     res.cookie("xeroRefreshToken", tokenSet.refresh_token, COOKIE_OPTIONS);
 
-    res.redirect(frontendURL);
+    // res.redirect(frontendURL);
+    res.send(`
+      <html>
+      <body>
+        <script>
+          function closeWindow() {
+            // Try to send message to parent
+            try {
+              window.opener.postMessage({ type: 'XERO_AUTH_SUCCESS' }, '${process.env.FRONTEND_URL}');
+            } catch (e) {
+              console.error('Failed to send message to opener:', e);
+            }
+
+            // Try multiple close methods
+            try {
+              window.close();
+              setTimeout(() => {
+                window.location.href = 'about:blank';
+                window.close();
+              }, 1000);
+            } catch (e) {
+              console.error('Failed to close window:', e);
+            }
+          }
+
+          // Execute close
+          closeWindow();
+        </script>
+        <div style="text-align: center; padding: 20px; font-family: Arial, sans-serif;">
+          <h3>Authentication Successful!</h3>
+          <p>This window will close automatically...</p>
+          <button onclick="closeWindow()" style="padding: 10px 20px; margin-top: 10px;">
+            Close Window
+          </button>
+        </div>
+      </body>
+    </html>
+    `);
   } catch (err) {
     res.send("Sorry, something went wrong");
   }
