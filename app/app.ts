@@ -10,16 +10,22 @@ import {
   XeroAccessToken,
   XeroIdToken,
   XeroClient,
-  Contact,
-  LineItem,
-  Invoice,
-  Invoices,
-  Phone,
-  Contacts,
+  // Contact,
+  // LineItem,
+  // Invoice,
+  // Invoices,
+  // Phone,
+  // Contacts,
 } from "xero-node";
 
 const session = require("express-session");
 
+// domains
+const domain: string = "localhost";
+const frontendURL: string = "http://localhost:5173";
+const backendURL: string = "http://localhost:5000";
+
+// client credentials
 const client_id: string = process.env.CLIENT_ID;
 const client_secret: string = process.env.CLIENT_SECRET;
 const redirectUrl: string = process.env.REDIRECT_URI;
@@ -44,7 +50,7 @@ const app: express.Application = express();
 // Configure CORS middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173"], // Frontend URL
+    origin: [frontendURL], // Frontend URL
     methods: ["GET", "POST"], // Allowed HTTP methods
     allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
     credentials: true, // Important for handling sessions
@@ -55,7 +61,7 @@ app.use(express.static(__dirname + "/build"));
 
 app.use(
   session({
-    secret: "something crazy",
+    secret: "bakitAngGuloMoXero?",
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false },
@@ -63,9 +69,12 @@ app.use(
 );
 
 const COOKIE_OPTIONS: CookieOptions = {
-  httpOnly: true,
+  httpOnly: false, // Change to false so client-side JS can access
   sameSite: "lax",
   maxAge: 24 * 60 * 60 * 1000,
+  path: "/",
+  domain: domain, // Specify domain
+  secure: false, // Set to true in production with HTTPS
 };
 
 const authenticationData: any = (req: Request, res: Response) => {
@@ -113,15 +122,16 @@ app.get("/callback", async (req: Request, res: Response) => {
     console.log(authData);
 
     // Store tokens into cookie
-    res.cookie("xero_access_token", tokenSet.access_token, COOKIE_OPTIONS);
+    res.cookie("xeroAccessToken", tokenSet.access_token, COOKIE_OPTIONS);
     res.cookie(
-      "xero_user_id",
+      "xeroUserId",
       authData.decodedAccessToken.xero_userid,
       COOKIE_OPTIONS
     );
-    res.cookie("xero_refresh_token", tokenSet.refresh_token, COOKIE_OPTIONS);
+    res.cookie("xeroRefreshToken", tokenSet.refresh_token, COOKIE_OPTIONS);
+    res.cookie("username", "Jerome", COOKIE_OPTIONS);
 
-    res.redirect("http://localhost:5173");
+    res.redirect(frontendURL);
   } catch (err) {
     res.send("Sorry, something went wrong");
   }
@@ -159,88 +169,6 @@ app.get("/auth-status", async (req: Request, res: Response) => {
   } catch (err) {
     console.error("Error checking auth status:", err);
     res.json({ isAuthenticated: false });
-  }
-});
-
-app.get("/organisation", async (req: Request, res: Response) => {
-  try {
-    const tokenSet: TokenSet = await xero.readTokenSet();
-    console.log(tokenSet.expired() ? "expired" : "valid");
-    const response: any = await xero.accountingApi.getOrganisations(
-      req.session.activeTenant.tenantId
-    );
-    res.send(`Hello, ${response.body.organisations[0].name}`);
-  } catch (err) {
-    res.send("Sorry, something went wrong");
-  }
-});
-
-app.get("/invoice", async (req: Request, res: Response) => {
-  try {
-    const contacts = await xero.accountingApi.getContacts(
-      req.session.activeTenant.tenantId
-    );
-    console.log("contacts: ", contacts.body.contacts);
-    const where = 'Status=="ACTIVE" AND Type=="SALES"';
-    const accounts = await xero.accountingApi.getAccounts(
-      req.session.activeTenant.tenantId,
-      null,
-      where
-    );
-    console.log("accounts: ", accounts.body.accounts);
-    const contact: Contact = {
-      contactID: contacts.body.contacts[0].contactID,
-    };
-    const lineItem: LineItem = {
-      accountID: accounts.body.accounts[0].accountID,
-      description: "consulting",
-      quantity: 1.0,
-      unitAmount: 10.0,
-    };
-    const invoice: Invoice = {
-      lineItems: [lineItem],
-      contact: contact,
-      dueDate: "2021-09-25",
-      date: "2021-09-24",
-      type: Invoice.TypeEnum.ACCREC,
-    };
-    const invoices: Invoices = {
-      invoices: [invoice],
-    };
-    const response = await xero.accountingApi.createInvoices(
-      req.session.activeTenant.tenantId,
-      invoices
-    );
-    console.log("invoices: ", response.body.invoices);
-    res.json(response.body.invoices);
-  } catch (err) {
-    res.json(err);
-  }
-});
-
-app.get("/contact", async (req: Request, res: Response) => {
-  try {
-    const contact: Contact = {
-      name: "Bruce Banner",
-      emailAddress: "hulk@avengers.com",
-      phones: [
-        {
-          phoneNumber: "555-555-5555",
-          phoneType: Phone.PhoneTypeEnum.MOBILE,
-        },
-      ],
-    };
-    const contacts: Contacts = {
-      contacts: [contact],
-    };
-    const response = await xero.accountingApi.createContacts(
-      req.session.activeTenant.tenantId,
-      contacts
-    );
-    console.log("contacts: ", response.body.contacts);
-    res.json(response.body.contacts);
-  } catch (err) {
-    res.json(err);
   }
 });
 
