@@ -113,11 +113,9 @@ app.get("/callback", async (req: Request, res: Response) => {
 
     // Store tokens into cookie
     res.cookie("xeroAccessToken", tokenSet.access_token, COOKIE_OPTIONS);
-    res.cookie(
-      "xeroTenantId",
-      authData.decodedAccessToken.xero_userid,
-      COOKIE_OPTIONS
-    );
+    res.cookie("xeroClientId", client_id, COOKIE_OPTIONS);
+    res.cookie("xeroClientSecret", client_secret, COOKIE_OPTIONS);
+    res.cookie("xeroTenantId", authData.decodedAccessToken.xero_userid, COOKIE_OPTIONS);
     res.cookie("xeroRefreshToken", tokenSet.refresh_token, COOKIE_OPTIONS);
 
     // res.redirect(frontendURL);
