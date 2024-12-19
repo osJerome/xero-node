@@ -124,7 +124,7 @@ app.get("/callback", async (req: Request, res: Response) => {
     // Store tokens into cookie
     res.cookie("xeroAccessToken", tokenSet.access_token, COOKIE_OPTIONS);
     res.cookie(
-      "xeroUserId",
+      "xeroTenantId",
       authData.decodedAccessToken.xero_userid,
       COOKIE_OPTIONS
     );
