@@ -129,7 +129,6 @@ app.get("/callback", async (req: Request, res: Response) => {
       COOKIE_OPTIONS
     );
     res.cookie("xeroRefreshToken", tokenSet.refresh_token, COOKIE_OPTIONS);
-    res.cookie("username", "Jerome", COOKIE_OPTIONS);
 
     res.redirect(frontendURL);
   } catch (err) {
