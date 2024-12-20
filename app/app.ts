@@ -42,7 +42,7 @@ app.use(
   cors({
     origin: [frontendURL], // Frontend URL
     methods: ["*"], // Allowed HTTP methods
-    allowedHeaders: ["Content-Type", "Authorization", 'xero-tenant-id'], // Allowed headers
+    allowedHeaders: ["Content-Type", "Authorization", "xero-tenant-id"], // Allowed headers
     credentials: true, // Important for handling sessions
   })
 );
@@ -195,39 +195,6 @@ app.get("/auth-status", async (req: Request, res: Response) => {
     res.json({ isAuthenticated: false });
   }
 });
-
-app.get("/accounts", async (req: Request, res: Response) => {
-  try {
-    // Ensure the user is authenticated
-    if (!req.session.tokenSet || !req.session.activeTenant) {
-      return res.status(401).json({ error: "Unauthorized: Please authenticate first." });
-    }
-
-    // Set the active tenant ID
-    const activeTenantId = req.session.activeTenant.tenantId;
-
-    // Set the access token
-    const accessToken = req.session.tokenSet.access_token;
-
-    // Fetch the accounts using Xero SDK
-    const response = await xero.accountingApi.getAccounts(activeTenantId);
-
-    // Return the accounts data
-    res.status(200).json(response.body);
-  } catch (err: any) {
-    console.error("Error fetching accounts:", err.response?.data || err.message);
-
-    // Handle specific Xero API errors
-    if (err.response) {
-      return res.status(err.response.status).json({
-        error: err.response.data || "Error fetching accounts from Xero API.",
-      });
-    }
-
-    res.status(500).json({ error: "Internal server error." });
-  }
-});
-
 
 const PORT = process.env.PORT || 5000;
 
